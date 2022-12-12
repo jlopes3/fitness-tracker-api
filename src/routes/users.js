@@ -72,7 +72,7 @@ router.get(`${endpoint}/:id`, checkPermission, async (req, res, next) => {
   }
 });
 
-router.post(`${endpoint}`, checkPermission, async (req, res, next) => {
+router.post(`${endpoint}`, async (req, res, next) => {
   debug(`${req.method} ${req.path} called...`);
   try {
     const { name, email, password } = req.body;
@@ -127,5 +127,26 @@ router.delete(`${endpoint}/:id`, checkPermission, async (req, res, next) => {
     next(err);
   }
 });
+
+router.put(
+  `${endpoint}/addExercise/:id`,
+  checkPermission,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { exerciseName } = req.body;
+
+      const user = await userDao.addExercise({ id, exerciseName });
+
+      res.json({
+        status: 200,
+        message: `Testing`,
+        data: hidePassword(user),
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 export default router;

@@ -15,6 +15,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  exercises: {
+    type: [String],
+    required: true,
+  },
 });
 
 UserSchema.path("email").validate((input) => {
