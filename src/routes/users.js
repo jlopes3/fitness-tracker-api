@@ -1,5 +1,6 @@
 import express from "express";
 import UserDao from "../data/UserDao.js";
+import ExerciseDao from "../data/ExerciseDao.js";
 import { factory } from "../util/debug.js";
 import { decodeToken } from "../util/token.js";
 import ApiError from "../model/ApiError.js";
@@ -7,6 +8,7 @@ import ApiError from "../model/ApiError.js";
 const debug = factory(import.meta.url);
 const router = express.Router();
 export const userDao = new UserDao();
+export const exerciseDao = new ExerciseDao();
 const endpoint = "/users";
 
 // pre: user is a Mongoose object
@@ -35,7 +37,7 @@ const checkPermission = (req, res, next) => {
   }
 };
 
-router.get(`${endpoint}`, checkPermission, async (req, res, next) => {
+router.get(`${endpoint}`, async (req, res, next) => {
   debug(`${req.method} ${req.path} called...`);
 
   try {
@@ -128,25 +130,65 @@ router.delete(`${endpoint}/:id`, checkPermission, async (req, res, next) => {
   }
 });
 
-router.put(
-  `${endpoint}/addExercise/:id`,
-  checkPermission,
-  async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { exerciseName } = req.body;
+/*
+router.post(`${endpoint}/addExercise/:id`, async (req, res, next) => {
+  try {
+    console.log("Entered addExercise");
+    const { id } = req.params;
+    const { exerciseName } = req.body;
 
-      const user = await userDao.addExercise({ id, exerciseName });
-
-      res.json({
-        status: 200,
-        message: `Testing`,
-        data: hidePassword(user),
-      });
-    } catch (err) {
-      next(err);
-    }
+    const exercise = await exerciseDao.create({
+      name: exerciseName,
+      userId: id,
+    });
+    console.log("Got to here");
+    res.json({
+      status: 200,
+      message: `Testing`,
+      data: exercise,
+    });
+  } catch (err) {
+    next(err);
   }
-);
+});
+*/
+
+router.post(`/addExercise`, async (req, res, next) => {
+  try {
+    console.log(`${req.method} ${req.path} called...`);
+    console.log("Entered add exercise");
+    const { name, userId } = req.body;
+    console.log(name);
+    console.log(userId);
+    const exercise = await exerciseDao.create({ name, userId });
+    res.status(201).json({
+      status: 201,
+      message: `Successfully created the following exercise!`,
+      data: exercise,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get(`${endpoint}/:id/exercises`, async (req, res, next) => {
+  try {
+    console.log("Got to here");
+    const { id } = req.params;
+    console.log(id);
+    const userId = id;
+    const exercises = await exerciseDao.readAll({
+      name: undefined,
+      userId: userId,
+    });
+    res.json({
+      status: 200,
+      message: `Successfully retrieved the following user's exercises!`,
+      data: exercises,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;

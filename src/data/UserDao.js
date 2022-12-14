@@ -1,5 +1,4 @@
 import User from "../model/User.js";
-import Exercise from "../model/User.js";
 import ApiError from "../model/ApiError.js";
 import { z } from "zod";
 import mongoose from "mongoose";
@@ -86,7 +85,7 @@ class UserDao {
 
   // return the updated user
   // throws ApiError if id is invalid or resource does not exist in our database
-  async update({ id, name, email, password, exercises }) {
+  async update({ id, name, email, password }) {
     debug("Validating the document id..");
     let result = validObjectId.safeParse(id);
     if (!result.success) {
@@ -129,38 +128,13 @@ class UserDao {
     debug("Updating the user document..");
     const user = await User.findByIdAndUpdate(
       id,
-      { name, email, password, exercises },
+      { name, email, password },
       { new: true, runValidators: true }
     );
     if (!user) {
       throw new ApiError(404, "Resource not found!");
     }
 
-    return user;
-  }
-
-  // add exercise
-  // return the updated user
-  // throws ApiError if id is invalid or resource does not exist in our database
-  async addExercise({ id, exerciseName }) {
-    debug("Validating the document id..");
-    let result = validObjectId.safeParse(id);
-    if (!result.success) {
-      throw new ApiError(400, "Invalid ID!");
-    }
-
-    let { exercises, name, email, password } = await User.findById(id);
-    exercises.push(exerciseName);
-
-    const user = await User.findByIdAndUpdate(
-      id,
-      { name, email, password, exercises },
-      { new: true, runValidators: true }
-    );
-
-    if (!user) {
-      throw new ApiError(404, "Resource not found!");
-    }
     return user;
   }
 

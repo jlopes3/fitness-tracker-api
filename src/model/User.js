@@ -1,25 +1,22 @@
 import mongoose from "mongoose";
 import { z } from "zod";
+import Exercise from "../model/Exercise.js";
 
-const UserSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
+const UserSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+    },
+    email: {
+      type: String,
+      unique: true,
+    },
+    password: {
+      type: String,
+    },
   },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  exercises: {
-    type: [String],
-    required: true,
-  },
-});
+  { collection: "Users" }
+);
 
 UserSchema.path("email").validate((input) => {
   try {
