@@ -94,6 +94,10 @@ class ExerciseDao {
     return exercise;
   }
 
+  async deleteMany(id) {
+    await Exercise.deleteMany({ userId: id });
+  }
+
   async deleteAll() {
     await Exercise.deleteMany({});
   }

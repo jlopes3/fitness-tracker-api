@@ -1,11 +1,9 @@
 import express from "express";
 import UserDao from "../data/UserDao.js";
 import ExerciseDao from "../data/ExerciseDao.js";
-import { factory } from "../util/debug.js";
 import { decodeToken } from "../util/token.js";
 import ApiError from "../model/ApiError.js";
 
-const debug = factory(import.meta.url);
 const router = express.Router();
 export const userDao = new UserDao();
 export const exerciseDao = new ExerciseDao();
@@ -17,6 +15,7 @@ const hidePassword = (user) => {
   return rest;
 };
 
+// checks authoirzation
 const checkPermission = (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
@@ -37,129 +36,90 @@ const checkPermission = (req, res, next) => {
   }
 };
 
-router.get(`${endpoint}`, async (req, res, next) => {
-  debug(`${req.method} ${req.path} called...`);
-
+// get all users with name and email as filters
+// MAY WANT TO RECONSIDER WHO CAN ACCESS
+router.get(`/users`, async (req, res, next) => {
   try {
-    const { name, email } = req.query;
+    const { name, email } = req.body;
     const users = await userDao.readAll({ name, email });
-    debug(`Preparing the response payload...`);
+    console.log(name);
+    console.log(users);
     res.json({
       status: 200,
       message: `Successfully retrieved ${users.length} users!`,
       data: users.map((user) => hidePassword(user)),
     });
-    debug(`Done with ${req.method} ${req.path}`);
   } catch (err) {
-    debug(`There was an error processing ${req.method} ${req.path} `);
     next(err);
   }
 });
 
-router.get(`${endpoint}/:id`, checkPermission, async (req, res, next) => {
-  debug(`${req.method} ${req.path} called...`);
+// gets a user with an id, needs authorization
+router.get(`/users/:id`, checkPermission, async (req, res, next) => {
   try {
     const { id } = req.params;
     const user = await userDao.read(id);
-    debug(`Preparing the response payload...`);
     res.json({
       status: 200,
       message: `Successfully retrieved the following user!`,
       data: hidePassword(user),
     });
-    debug(`Done with ${req.method} ${req.path}`);
   } catch (err) {
-    debug(`There was an error processing ${req.method} ${req.path} `);
     next(err);
   }
 });
 
-router.post(`${endpoint}`, async (req, res, next) => {
-  debug(`${req.method} ${req.path} called...`);
+// Creates a new user
+router.post(`/users`, async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
     const user = await userDao.create({ name, email, password });
-    debug(`Preparing the response payload...`);
     res.status(201).json({
       status: 201,
       message: `Successfully created the following user!`,
       data: hidePassword(user),
     });
-    debug(`Done with ${req.method} ${req.path}`);
   } catch (err) {
-    debug(`There was an error processing ${req.method} ${req.path} `);
     next(err);
   }
 });
 
-router.put(`${endpoint}/:id`, checkPermission, async (req, res, next) => {
-  debug(`${req.method} ${req.path} called...`);
+// Updates an existing user name, email, or password
+router.put(`/users/:id`, checkPermission, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, email, password } = req.body;
     const user = await userDao.update({ id, name, email, password });
-    debug(`Preparing the response payload...`);
     res.json({
       status: 200,
       message: `Successfully updated the following bookmark!`,
       data: hidePassword(user),
     });
-    debug(`Done with ${req.method} ${req.path}`);
   } catch (err) {
-    debug(`There was an error processing ${req.method} ${req.path} `);
     next(err);
   }
 });
 
-router.delete(`${endpoint}/:id`, checkPermission, async (req, res, next) => {
-  debug(`${req.method} ${req.path} called...`);
+// Delete a user and their exercises given the user's id
+router.delete(`/users/:id`, checkPermission, async (req, res, next) => {
   try {
-    debug(`Read ID received as request parameter...`);
     const { id } = req.params;
+    exerciseDao.deleteMany(id);
     const user = await userDao.delete(id);
-    debug(`Preparing the response payload...`);
     res.json({
       status: 200,
-      message: `Successfully deleted the following user!`,
+      message: `Successfully deleted the following user and their exercises!`,
       data: hidePassword(user),
     });
-    debug(`Done with ${req.method} ${req.path} `);
-  } catch (err) {
-    debug(`There was an error processing ${req.method} ${req.path} `);
-    next(err);
-  }
-});
-
-/*
-router.post(`${endpoint}/addExercise/:id`, async (req, res, next) => {
-  try {
-    console.log("Entered addExercise");
-    const { id } = req.params;
-    const { exerciseName } = req.body;
-
-    const exercise = await exerciseDao.create({
-      name: exerciseName,
-      userId: id,
-    });
-    console.log("Got to here");
-    res.json({
-      status: 200,
-      message: `Testing`,
-      data: exercise,
-    });
   } catch (err) {
     next(err);
   }
 });
-*/
 
-router.post(`/addExercise`, async (req, res, next) => {
+// Make an exercise giving a name and userId
+router.post(`/exercises`, async (req, res, next) => {
   try {
-    console.log(`${req.method} ${req.path} called...`);
-    console.log("Entered add exercise");
     const { name, userId } = req.body;
-    console.log(name);
-    console.log(userId);
     const exercise = await exerciseDao.create({ name, userId });
     res.status(201).json({
       status: 201,
@@ -171,11 +131,10 @@ router.post(`/addExercise`, async (req, res, next) => {
   }
 });
 
-router.get(`${endpoint}/:id/exercises`, async (req, res, next) => {
+// Get an exercise giving the id
+router.get(`/exercises/:id/`, async (req, res, next) => {
   try {
-    console.log("Got to here");
     const { id } = req.params;
-    console.log(id);
     const userId = id;
     const exercises = await exerciseDao.readAll({
       name: undefined,
